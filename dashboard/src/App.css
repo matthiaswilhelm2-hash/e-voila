@@ -1,0 +1,289 @@
+:root {
+  --green: 22, 58, 41;
+  --white: 255, 255, 255;
+  --gold: 212, 175, 55;
+  --rotation-duration: 6s;
+  --dynamic-border-radius: 55%;
+}
+
+.dark {
+  --bg: #0a0a0a;
+  --card-bg: rgba(255,255,255,0.05);
+  --card-border: rgba(255,255,255,0.08);
+  --text: #ffffff;
+  --text-sub: rgba(255,255,255,0.45);
+  --note-text: rgba(255,255,255,0.85);
+  --note-meta: rgba(255,255,255,0.3);
+  --badge-bg: rgba(22,58,41,0.5);
+  --badge-color: #4caf82;
+  --badge-border: rgba(76,175,130,0.3);
+  --btn-bg: rgba(255,255,255,0.1);
+  --btn-border: rgba(255,255,255,0.15);
+  --toggle-bg: rgba(255,255,255,0.1);
+  --toggle-color: #ffffff;
+}
+
+.light {
+  --bg: #f0f0ee;
+  --card-bg: rgba(255,255,255,0.9);
+  --card-border: rgba(0,0,0,0.06);
+  --text: #111111;
+  --text-sub: rgba(0,0,0,0.45);
+  --note-text: #222222;
+  --note-meta: rgba(0,0,0,0.35);
+  --badge-bg: #e8f5ee;
+  --badge-color: #163a29;
+  --badge-border: rgba(22,58,41,0.2);
+  --btn-bg: rgba(22,58,41,0.08);
+  --btn-border: rgba(22,58,41,0.2);
+  --toggle-bg: rgba(0,0,0,0.08);
+  --toggle-color: #111111;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* body: nur Font & Basis */
+body {
+  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  width: 100%;
+  height: 100%;
+}
+
+/* ⚠️ GEÄNDERT: kein display:flex, kein min-height:100vh
+   → Dashboard.css übernimmt die Kontrolle auf /dashboard */
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== AUFNAHME-SEITE (App.jsx) ===== */
+.page {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 16px;
+  background: var(--bg);
+  min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.brand-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #1f5b3c, #163a29);
+  color: white;
+  font-weight: 800;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(22,58,41,0.4);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.header-sub {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.toggle-btn {
+  margin-left: auto;
+  background: var(--toggle-bg);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover { transform: scale(1.1); }
+
+.hero {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.anim-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.scale-0 {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 180px;
+  height: 180px;
+  border-radius: var(--dynamic-border-radius);
+  animation: rotateShape var(--rotation-duration) infinite ease-in-out;
+}
+
+.circle-1 {
+  background: radial-gradient(circle,
+    rgba(var(--green), 0) 0%,
+    rgba(var(--green), 0) 67%,
+    rgba(var(--green), 1) 73%,
+    rgba(var(--green), 1) 100%);
+  box-shadow: 0 0 30px 8px rgba(var(--green), 0.3);
+}
+
+.circle-2 {
+  background: radial-gradient(circle,
+    rgba(var(--white), 0) 0%,
+    rgba(var(--white), 0) 67%,
+    rgba(var(--white), 0.6) 75%,
+    rgba(var(--white), 0.6) 100%);
+  animation: rotateShape var(--rotation-duration) infinite reverse ease-in-out;
+  box-shadow: 0 0 30px 8px rgba(var(--white), 0.05);
+}
+
+.circle-3 {
+  background: radial-gradient(circle,
+    rgba(var(--gold), 0) 0%,
+    rgba(var(--gold), 0) 70%,
+    rgba(var(--gold), 0.8) 73%,
+    rgba(var(--gold), 0.8) 100%);
+  box-shadow: 0 0 30px 8px rgba(var(--gold), 0.15);
+}
+
+@keyframes rotateShape {
+  0%   { transform: translate(-50%, -50%) rotate(0deg) scale(1); border-radius: var(--dynamic-border-radius); }
+  50%  { transform: translate(-50%, -50%) rotate(180deg) scale(1.05); border-radius: 45% 55% 50% 50%; }
+  100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); border-radius: var(--dynamic-border-radius); }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 32px;
+}
+
+.hero-content h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.hero-content p {
+  color: var(--text-sub);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.btn-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border-radius: 999px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  backdrop-filter: blur(12px);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+.btn-record:hover { transform: translateY(-2px); }
+.btn-record:active { transform: translateY(0); }
+.btn-stop { background: rgba(192,57,43,0.2); border-color: rgba(192,57,43,0.4); color: #e74c3c; }
+.btn-record.loading { opacity: 0.6; cursor: not-allowed; }
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.note {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 10px;
+  border: 1px solid var(--card-border);
+  border-left: 4px solid #1f5b3c;
+}
+
+.note p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--note-text);
+  margin-bottom: 10px;
+}
+
+.note-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  background: var(--badge-bg);
+  color: var(--badge-color);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--badge-border);
+}
+
+.note-meta span:last-child {
+  font-size: 12px;
+  color: var(--note-meta);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 14px;
+  padding: 32px;
+}
+
+@media (max-width: 480px) {
+  .hero { min-height: 240px; }
+  .btn-record { padding: 14px 24px; font-size: 15px; width: 100%; justify-content: center; }
+  .page { padding: 20px 12px; }
+}
