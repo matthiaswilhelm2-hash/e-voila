@@ -4,15 +4,19 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
 import Dashboard from './Dashboard'
 import Login from './Login'
+import Landing from './Landing'
+import Handover from './Handover'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/"          element={<App />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/login"     element={<Login />} />
+        <Route path="/"           element={<Landing />} />
+        <Route path="/aufnahme"   element={<App />} />
+        <Route path="/dashboard"  element={<Dashboard />} />
+        <Route path="/login"      element={<Login />} />
+        <Route path="/handover"   element={<Handover />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>

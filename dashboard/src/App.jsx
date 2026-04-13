@@ -246,6 +246,12 @@ Antworte NUR mit validem JSON ohne Markdown:
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <a href="/handover" style={{
+            background: 'none', border: '1px solid #1f5b3c', color: '#4caf82',
+            padding: '7px 14px', borderRadius: 8,
+            textDecoration: 'none', fontSize: 12, fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}>🔀 Übergabe</a>
           <a href="/dashboard" style={{
             background: '#1f5b3c', color: 'white',
             padding: '7px 14px', borderRadius: 8,

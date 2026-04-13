@@ -4,21 +4,22 @@ import CalendarView from './CalendarView'
 import './Dashboard.css'
 
 const supabase = createClient(
-  'https://poiwjrkqtbfxhfqvabep.supabase.co',
-  'sb_publishable_XOGsctULk60og40FT2zRfg_amrSIm5_'
+  import.meta.env.VITE_SUPABASE_URL  || 'https://poiwjrkqtbfxhfqvabep.supabase.co',
+  import.meta.env.VITE_SUPABASE_KEY  || 'sb_publishable_XOGsctULk60og40FT2zRfg_amrSIm5_'
 )
 
 const NAV = [
-  { id: 'overview',  label: 'Übersicht',       icon: '⊞' },
-  { id: 'bewohner',  label: 'Bewohner',         icon: '🏥' },
-  { id: 'pipeline',  label: 'Pflege-Pipeline',  icon: '🔄' },
-  { id: 'tasks',     label: 'Tasks',            icon: '✓' },
-  { id: 'calendar',  label: 'Kalender',         icon: '📅' },
-  { id: 'notes',     label: 'Notizen',          icon: '🎙' },
-  { id: 'analysis',  label: 'KI-Analyse',       icon: '🤖' },
-  { id: 'finanzen',  label: 'Finanzen',         icon: '💶' },
-  { id: 'reports',   label: 'Berichte',         icon: '📊' },
-  { id: 'settings',  label: 'Einstellungen',    icon: '⚙️' },
+  { id: 'overview',  label: 'Übersicht',         icon: '⊞' },
+  { id: 'bewohner',  label: 'Bewohner',           icon: '🏥' },
+  { id: 'pipeline',  label: 'Pflege-Pipeline',    icon: '🔄' },
+  { id: 'handover',  label: 'Schichtübergabe',    icon: '🔀' },
+  { id: 'tasks',     label: 'Tasks',              icon: '✓' },
+  { id: 'calendar',  label: 'Kalender',           icon: '📅' },
+  { id: 'notes',     label: 'Notizen',            icon: '🎙' },
+  { id: 'analysis',  label: 'KI-Analyse',         icon: '🤖' },
+  { id: 'finanzen',  label: 'Finanzen',           icon: '💶' },
+  { id: 'reports',   label: 'Berichte',           icon: '📊' },
+  { id: 'settings',  label: 'Einstellungen',      icon: '⚙️' },
 ]
 
 const SCHEDULE_COLORS = ['yellow', 'blue', 'red', 'green', 'purple']
@@ -31,14 +32,7 @@ const PFLEGE_STUFEN = [
   { id: 'entlassung', label: 'Entlassung',   color: '#ef4444' },
 ]
 
-const MOCK_BEWOHNER = [
-  { id: 1, name: 'Hildegard Müller', zimmer: '101', pflegegrad: 3, status: 'stabil',     arzt: 'Dr. Weber', aufnahme: '12.01.2026', notizen: 2 },
-  { id: 2, name: 'Ernst Hoffmann',   zimmer: '102', pflegegrad: 4, status: 'aufnahme',   arzt: 'Dr. Braun', aufnahme: '08.03.2026', notizen: 1 },
-  { id: 3, name: 'Gertrude Schmidt', zimmer: '203', pflegegrad: 2, status: 'eingewoehn', arzt: 'Dr. Weber', aufnahme: '01.03.2026', notizen: 3 },
-  { id: 4, name: 'Wilhelm Fischer',  zimmer: '205', pflegegrad: 5, status: 'stabil',     arzt: 'Dr. Klein', aufnahme: '15.11.2025', notizen: 5 },
-  { id: 5, name: 'Irmgard Bauer',    zimmer: '301', pflegegrad: 3, status: 'anfrage',    arzt: 'Dr. Braun', aufnahme: '—',          notizen: 0 },
-  { id: 6, name: 'Karl Zimmermann',  zimmer: '302', pflegegrad: 4, status: 'entlassung', arzt: 'Dr. Klein', aufnahme: '20.09.2025', notizen: 4 },
-]
+// Bewohnerdaten kommen jetzt aus Supabase (residents-Tabelle)
 
 const MOCK_FINANZEN = [
   { id: 1, titel: 'Pflegekosten März – Hildegard Müller', betrag: 3200,   typ: 'einnahme', status: 'bezahlt', datum: '01.03.2026' },
@@ -155,6 +149,7 @@ export default function Dashboard() {
   const [notes, setNotes]           = useState([])
   const [tasks, setTasks]           = useState([])
   const [analysis, setAnalysis]     = useState([])
+  const [residents, setResidents]   = useState([])
   const [loading, setLoading]       = useState(true)
   const [user, setUser]             = useState(null)
   const [search, setSearch]         = useState('')
@@ -164,6 +159,8 @@ export default function Dashboard() {
   const [today]                     = useState(new Date())
   const [notification, setNotification] = useState(null)
   const [toggles, setToggles]       = useState([true, true, false, true])
+  const [showNewResident, setShowNewResident] = useState(false)
+  const [newResident, setNewResident] = useState({ name: '', room: '', care_level: 3, status: 'aufnahme', doctor: '' })
 
   useEffect(() => {
     fetchAll()
@@ -172,15 +169,36 @@ export default function Dashboard() {
 
   async function fetchAll() {
     setLoading(true)
-    const [nRes, tRes, aRes] = await Promise.all([
+    const [nRes, tRes, aRes, rRes] = await Promise.all([
       supabase.from('voice_notes').select('*').order('created_at', { ascending: false }),
       supabase.from('tasks').select('*').order('created_at', { ascending: false }),
       supabase.from('ai_analysis').select('*').order('created_at', { ascending: false }),
+      supabase.from('residents').select('*').order('name'),
     ])
-    setNotes(nRes.data    || [])
-    setTasks(tRes.data    || [])
-    setAnalysis(aRes.data || [])
+    setNotes(nRes.data     || [])
+    setTasks(tRes.data     || [])
+    setAnalysis(aRes.data  || [])
+    setResidents(rRes.data || [])
     setLoading(false)
+  }
+
+  async function createResident() {
+    if (!newResident.name.trim()) return
+    const { error } = await supabase.from('residents').insert([{
+      name:       newResident.name.trim(),
+      room:       newResident.room.trim() || null,
+      care_level: parseInt(newResident.care_level) || 3,
+      status:     newResident.status,
+      doctor:     newResident.doctor.trim() || null,
+    }])
+    if (error) {
+      showNotification('Fehler beim Anlegen', 'error')
+    } else {
+      showNotification(`✓ ${newResident.name} angelegt`)
+      setShowNewResident(false)
+      setNewResident({ name: '', room: '', care_level: 3, status: 'aufnahme', doctor: '' })
+      fetchAll()
+    }
   }
 
   function showNotification(msg, type = 'success') {
@@ -273,7 +291,8 @@ export default function Dashboard() {
   const einnahmen = MOCK_FINANZEN.filter(f => f.typ === 'einnahme').reduce((s, f) => s + f.betrag, 0)
   const ausgaben  = Math.abs(MOCK_FINANZEN.filter(f => f.typ === 'ausgabe').reduce((s, f) => s + f.betrag, 0))
   const offeneRechnungen = MOCK_FINANZEN.filter(f => f.status === 'offen').length
-  const belegung  = Math.round((MOCK_BEWOHNER.filter(b => b.status !== 'anfrage').length / 30) * 100)
+  const activeResidents = residents.filter(b => b.status !== 'anfrage')
+  const belegung  = Math.round((activeResidents.length / Math.max(30, residents.length)) * 100)
 
   return (
     <div className="db-root">
@@ -335,7 +354,7 @@ export default function Dashboard() {
                 <>
                   <div className="kpi-row">
                     {[
-                      { icon: '🏥', value: MOCK_BEWOHNER.filter(b => b.status !== 'anfrage').length, label: 'Bewohner aktiv', bg: '#f0fdf4', color: '#16a34a' },
+                      { icon: '🏥', value: residents.filter(b => b.status !== 'anfrage').length, label: 'Bewohner aktiv', bg: '#f0fdf4', color: '#16a34a' },
                       { icon: '📋', value: openTasks,    label: 'Offene Tasks',   bg: '#eff6ff', color: '#2563eb' },
                       { icon: '🔥', value: highPrio,     label: 'Dringend',       bg: '#fef2f2', color: '#dc2626' },
                       { icon: '🛏', value: `${belegung}%`, label: 'Belegung',     bg: '#f5f3ff', color: '#7c3aed' },
@@ -403,11 +422,11 @@ export default function Dashboard() {
                         <h3>🏥 Bewohner Übersicht</h3>
                         <button className="btn-link" onClick={() => setNav('bewohner')}>Alle →</button>
                       </div>
-                      {MOCK_BEWOHNER.slice(0, 5).map(b => (
+                      {residents.slice(0, 5).map(b => (
                         <div key={b.id} className="finance-row">
                           <div className="finance-info">
                             <div className="finance-title">{b.name}</div>
-                            <div className="finance-sub">Zimmer {b.zimmer} · PG {b.pflegegrad}</div>
+                            <div className="finance-sub">{b.room ? `Zimmer ${b.room} · ` : ''}PG {b.care_level || '–'}</div>
                           </div>
                           <span className="tag" style={{ background: stufenColor(b.status) + '20', color: stufenColor(b.status) }}>
                             {stufenLabel(b.status)}
@@ -438,10 +457,10 @@ export default function Dashboard() {
                 <>
                   <div className="kpi-row">
                     {[
-                      { icon: '🏥', value: MOCK_BEWOHNER.length,                                        label: 'Gesamt',       bg: '#f0fdf4', color: '#16a34a' },
-                      { icon: '✅', value: MOCK_BEWOHNER.filter(b => b.status === 'stabil').length,     label: 'Stabil',       bg: '#eff6ff', color: '#2563eb' },
-                      { icon: '🔄', value: MOCK_BEWOHNER.filter(b => b.status === 'eingewoehn').length, label: 'Eingewöhnung', bg: '#f5f3ff', color: '#7c3aed' },
-                      { icon: '📋', value: MOCK_BEWOHNER.filter(b => b.status === 'anfrage').length,    label: 'Anfragen',     bg: '#fffbeb', color: '#d97706' },
+                      { icon: '🏥', value: residents.length,                                          label: 'Gesamt',       bg: '#f0fdf4', color: '#16a34a' },
+                      { icon: '✅', value: residents.filter(b => b.status === 'stabil').length,       label: 'Stabil',       bg: '#eff6ff', color: '#2563eb' },
+                      { icon: '🔄', value: residents.filter(b => b.status === 'eingewoehn').length,   label: 'Eingewöhnung', bg: '#f5f3ff', color: '#7c3aed' },
+                      { icon: '📋', value: residents.filter(b => b.status === 'anfrage').length,      label: 'Anfragen',     bg: '#fffbeb', color: '#d97706' },
                     ].map((k, i) => (
                       <div className="kpi" key={i}>
                         <div className="kpi-icon-wrap" style={{ background: k.bg }}>{k.icon}</div>
@@ -455,31 +474,72 @@ export default function Dashboard() {
                   <div className="card">
                     <div className="card-header">
                       <h3>🏥 Alle Bewohner</h3>
-                      <button className="btn-primary">+ Neuer Bewohner</button>
+                      <button className="btn-primary" onClick={() => setShowNewResident(v => !v)}>+ Neuer Bewohner</button>
                     </div>
+
+                    {showNewResident && (
+                      <div style={{ padding: '16px 20px', background: '#0f172a', borderBottom: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                          <div className="settings-field" style={{ flex: '2 1 180px' }}>
+                            <label>Name *</label>
+                            <input value={newResident.name} onChange={e => setNewResident(r => ({ ...r, name: e.target.value }))} placeholder="Vor- und Nachname" />
+                          </div>
+                          <div className="settings-field" style={{ flex: '1 1 80px' }}>
+                            <label>Zimmer</label>
+                            <input value={newResident.room} onChange={e => setNewResident(r => ({ ...r, room: e.target.value }))} placeholder="101" />
+                          </div>
+                          <div className="settings-field" style={{ flex: '1 1 100px' }}>
+                            <label>Pflegegrad</label>
+                            <select value={newResident.care_level} onChange={e => setNewResident(r => ({ ...r, care_level: e.target.value }))}>
+                              {[1,2,3,4,5].map(n => <option key={n} value={n}>PG {n}</option>)}
+                            </select>
+                          </div>
+                          <div className="settings-field" style={{ flex: '1 1 140px' }}>
+                            <label>Status</label>
+                            <select value={newResident.status} onChange={e => setNewResident(r => ({ ...r, status: e.target.value }))}>
+                              {PFLEGE_STUFEN.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="settings-field" style={{ flex: '2 1 160px' }}>
+                            <label>Arzt</label>
+                            <input value={newResident.doctor} onChange={e => setNewResident(r => ({ ...r, doctor: e.target.value }))} placeholder="Dr. Müller" />
+                          </div>
+                          <button className="btn-primary" style={{ marginBottom: 4 }} onClick={createResident}>Anlegen</button>
+                          <button className="btn-outline" style={{ marginBottom: 4 }} onClick={() => setShowNewResident(false)}>Abbrechen</button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="patient-table">
                       <div className="patient-table-head">
                         <span>Name</span><span>Zimmer</span><span>Pflegegrad</span>
                         <span>Status</span><span>Arzt</span><span>Aktionen</span>
                       </div>
-                      {MOCK_BEWOHNER.map(b => (
+                      {residents.length === 0 && (
+                        <div className="empty" style={{ padding: 32 }}>
+                          Noch keine Bewohner · <button className="btn-link" onClick={() => setShowNewResident(true)}>Ersten Bewohner anlegen →</button>
+                        </div>
+                      )}
+                      {residents.map(b => (
                         <div key={b.id} className="patient-table-row">
                           <div className="patient-contact">
                             <div className="patient-avatar">{b.name.charAt(0)}</div>
                             <div>
                               <div className="patient-name">{b.name}</div>
-                              <div className="patient-sub">Aufnahme: {b.aufnahme}</div>
+                              <div className="patient-sub">
+                                {b.admission_date ? `Aufnahme: ${new Date(b.admission_date).toLocaleDateString('de-DE')}` : 'Aufnahme: —'}
+                              </div>
                             </div>
                           </div>
-                          <span className="meta-chip">🛏 {b.zimmer}</span>
-                          <span className="meta-chip">PG {b.pflegegrad}</span>
+                          <span className="meta-chip">🛏 {b.room || '–'}</span>
+                          <span className="meta-chip">PG {b.care_level || '–'}</span>
                           <span className="tag" style={{ background: stufenColor(b.status) + '20', color: stufenColor(b.status) }}>
                             {stufenLabel(b.status)}
                           </span>
-                          <span className="patient-sub">{b.arzt}</span>
+                          <span className="patient-sub">{b.doctor || '–'}</span>
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button className="btn-icon-sm" title="Akte">📋</button>
-                            <button className="btn-icon-sm" title="Notiz">🎙</button>
+                            <button className="btn-icon-sm" title="Notiz" onClick={() => window.location.href = '/'}>🎙</button>
                             <button className="btn-icon-sm" onClick={() => showNotification(`Task für ${b.name} erstellt`)}>✓</button>
                           </div>
                         </div>
@@ -489,11 +549,30 @@ export default function Dashboard() {
                 </>
               )}
 
+              {nav === 'handover' && (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <div style={{ fontSize: 64, marginBottom: 16 }}>🔀</div>
+                  <h2 style={{ fontWeight: 800, marginBottom: 12 }}>KI-Schichtübergabe</h2>
+                  <p style={{ opacity: 0.6, marginBottom: 28, maxWidth: 400, margin: '0 auto 28px' }}>
+                    Öffne das Übergabe-Modul um eine KI-gestützte Zusammenfassung des aktuellen Dienstes zu erstellen.
+                    45 Minuten Übergabe → 5 Minuten.
+                  </p>
+                  <a href="/handover" style={{
+                    background: 'linear-gradient(135deg, #1f5b3c, #2d7a54)',
+                    color: 'white', padding: '16px 36px',
+                    borderRadius: 12, textDecoration: 'none',
+                    fontWeight: 700, fontSize: 15,
+                    boxShadow: '0 8px 32px rgba(31,91,60,0.3)',
+                    display: 'inline-block',
+                  }}>🔀 Schichtübergabe öffnen →</a>
+                </div>
+              )}
+
               {nav === 'pipeline' && (
                 <>
                   <div className="kpi-row">
                     {PFLEGE_STUFEN.map(s => {
-                      const count = MOCK_BEWOHNER.filter(b => b.status === s.id).length
+                      const count = residents.filter(b => b.status === s.id).length
                       return (
                         <div className="kpi" key={s.id}>
                           <div className="kpi-icon-wrap" style={{ background: s.color + '20' }}>🏥</div>
@@ -512,7 +591,7 @@ export default function Dashboard() {
                     </div>
                     <div className="pipeline">
                       {PFLEGE_STUFEN.map(stufe => {
-                        const bewohner = MOCK_BEWOHNER.filter(b => b.status === stufe.id)
+                        const bewohner = residents.filter(b => b.status === stufe.id)
                         return (
                           <div key={stufe.id} className="pipeline-col">
                             <div className="pipeline-header" style={{ borderColor: stufe.color }}>
@@ -521,10 +600,10 @@ export default function Dashboard() {
                             </div>
                             {bewohner.map(b => (
                               <div key={b.id} className="pipeline-card"
-                                onClick={() => showNotification(`${b.name} – Zimmer ${b.zimmer}`, 'info')}>
+                                onClick={() => showNotification(`${b.name}${b.room ? ` – Zimmer ${b.room}` : ''}`, 'info')}>
                                 <div className="pipeline-title">{b.name}</div>
-                                <div className="pipeline-contact">🛏 Zimmer {b.zimmer}</div>
-                                <div className="pipeline-value">PG {b.pflegegrad} · {b.arzt}</div>
+                                {b.room && <div className="pipeline-contact">🛏 Zimmer {b.room}</div>}
+                                <div className="pipeline-value">PG {b.care_level || '–'} · {b.doctor || '–'}</div>
                               </div>
                             ))}
                             {bewohner.length === 0 && <div className="pipeline-empty">Keine Bewohner</div>}
@@ -687,8 +766,8 @@ export default function Dashboard() {
                       <div className="card-header"><h3>🛏 Zimmer & Kapazität</h3></div>
                       {[
                         { label: 'Gesamtkapazität',   value: '30 Zimmer' },
-                        { label: 'Belegt',             value: `${MOCK_BEWOHNER.filter(b => b.status !== 'anfrage').length} Zimmer` },
-                        { label: 'Frei',               value: `${30 - MOCK_BEWOHNER.filter(b => b.status !== 'anfrage').length} Zimmer` },
+                        { label: 'Belegt',             value: `${activeResidents.length} Zimmer` },
+                        { label: 'Frei',               value: `${30 - activeResidents.length} Zimmer` },
                         { label: 'Auslastung',         value: `${belegung}%` },
                         { label: 'Ø Kosten/Bewohner',  value: '3.580 €/Monat' },
                         { label: 'Offene Rechnungen',  value: `${offeneRechnungen} Stück` },
@@ -744,7 +823,8 @@ export default function Dashboard() {
                     <div className="card">
                       <div className="card-header"><h3>🏥 Bewohner-Statistik</h3></div>
                       {PFLEGE_STUFEN.map(s => {
-                        const count = MOCK_BEWOHNER.filter(b => b.status === s.id).length
+                        const count = residents.filter(b => b.status === s.id).length
+
                         return (
                           <div key={s.id} className="finance-row">
                             <div className="finance-title">{s.label}</div>
