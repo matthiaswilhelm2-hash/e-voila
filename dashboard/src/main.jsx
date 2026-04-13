@@ -6,6 +6,7 @@ import Dashboard from './Dashboard'
 import Login from './Login'
 import Landing from './Landing'
 import Handover from './Handover'
+import SISAufnahme from './SISAufnahme'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -13,7 +14,8 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/"           element={<Landing />} />
-        <Route path="/aufnahme"   element={<App />} />
+        <Route path="/aufnahme"   element={<SISAufnahme />} />
+        <Route path="/notiz"      element={<App />} />
         <Route path="/dashboard"  element={<Dashboard />} />
         <Route path="/login"      element={<Login />} />
         <Route path="/handover"   element={<Handover />} />

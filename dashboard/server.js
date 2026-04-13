@@ -137,6 +137,71 @@ Antworte NUR mit validem JSON ohne Markdown:
   }
 })
 
+// ── SIS AUFNAHME EXTRAKTION ───────────────────────────────────
+app.post('/api/intake', async (req, res) => {
+  try {
+    const { text, step = 'grunddaten', context = {} } = req.body
+
+    const stepPrompts = {
+      grunddaten: `Extrahiere Grunddaten des Patienten / der Patientin.
+Antworte NUR mit validem JSON ohne Markdown:
+{"name":"Vollständiger Name oder null","geburtsdatum":"YYYY-MM-DD oder null","pflegegrad":"1|2|3|4|5 oder null","zimmer":"Zimmernummer als Text oder null"}`,
+
+      hauptanliegen: `Extrahiere das Hauptanliegen und die persönlichen Wünsche des Patienten / der Patientin.
+Antworte NUR mit validem JSON ohne Markdown:
+{"was_bewegt_sie":"Was den Patienten bewegt, max 300 Zeichen auf Deutsch"}`,
+
+      gesundheit: `Extrahiere Gesundheitsinformationen.
+Antworte NUR mit validem JSON ohne Markdown:
+{"diagnosen":"Hauptdiagnosen als Fließtext auf Deutsch oder null","allergien":"Allergien oder null","medikamente":"Medikamente als Text oder null"}`,
+
+      mobilitaet: `Extrahiere Mobilitäts- und Selbstversorgungsinformationen.
+Wähle für mobilitaet aus: gehfähig, eingeschränkt, rollstuhlpflichtig, bettlägerig.
+Wähle für selbstversorgung aus: selbstständig, teilweise, vollständig abhängig.
+Wähle für kognition aus: orientiert, leicht eingeschränkt, stark eingeschränkt, dement.
+Antworte NUR mit validem JSON ohne Markdown:
+{"mobilitaet":"Wert oder null","selbstversorgung":"Wert oder null","kognition":"Wert oder null"}`,
+
+      kontakt: `Extrahiere Kontakt- und Versicherungsinformationen.
+Antworte NUR mit validem JSON ohne Markdown:
+{"notfallkontakt":"Name und Telefonnummer oder null","versicherung":"Krankenkasse oder null","arzt":"Hausarzt/Hausärztin oder null"}`,
+    }
+
+    const prompt = stepPrompts[step] || stepPrompts.grunddaten
+    const ctxStr = Object.keys(context).length > 0
+      ? `\nBereits erfasste Daten (nicht überschreiben wenn nicht im Transkript genannt): ${JSON.stringify(context)}`
+      : ''
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{
+          role: 'system',
+          content: `Du bist ein KI-Assistent für die Patientenaufnahme in einem deutschen Pflegeheim. Die Sprache des Transkripts kann beliebig sein – extrahiere und antworte immer auf Deutsch.${ctxStr}\n\n${prompt}`
+        }, {
+          role: 'user',
+          content: `Transkript: "${text}"`
+        }],
+        temperature: 0.1,
+      }),
+    })
+
+    const data = await response.json()
+    let extracted = {}
+    try {
+      const raw = data.choices[0].message.content
+      extracted = JSON.parse(raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim())
+    } catch { extracted = {} }
+
+    res.json({ extracted, transcript: text })
+  } catch (err) {
+    console.error('Intake Fehler:', err)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 app.listen(3001, () => {
   console.log('✅ E-Voila Proxy läuft auf http://localhost:3001')
   console.log('🔑 OpenAI Key:', OPENAI_KEY ? '✓ Gefunden' : '✗ FEHLT!')
