@@ -20,6 +20,7 @@ app.post('/api/whisper', upload.single('file'), async (req, res) => {
       contentType: req.file.mimetype,
     })
     form.append('model', 'whisper-1')
+    form.append('response_format', 'verbose_json') // gibt language + text zurück
     // Kein 'language' → Whisper erkennt Sprache automatisch (DE, EN, TR, AR, etc. + Akzente)
 
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {

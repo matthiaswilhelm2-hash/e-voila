@@ -11,16 +11,9 @@
     {
       "name": "Proxy Server (OpenAI Whisper + GPT)",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["server.js"],
+      "runtimeArgs": ["--env-file", ".env", "server.js"],
       "cwd": "dashboard",
       "port": 3001
-    },
-    {
-      "name": "Backend (FastAPI Python)",
-      "runtimeExecutable": "uvicorn",
-      "runtimeArgs": ["main:app", "--reload", "--port", "8000"],
-      "cwd": "backend",
-      "port": 8000
     }
   ]
 }
